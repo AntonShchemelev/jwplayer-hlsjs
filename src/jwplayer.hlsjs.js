@@ -595,26 +595,32 @@ function HlsProv(id, _playerConfig, mediaElement){
     this.checkComplete = function(){ return !!this.before_complete; };
     this.setControls = empty_fn('setControls');
     this.attachMedia = function(){
-        if (this.before_complete)
-            return playback_complete();
-        if (this.ad_count)
-            hls_log('jwprovider attach inside ad '+this.ad_count);
-        this.attached = true;
-        hls.attachMedia(video);
+        if (_this.state !== 'paused') {
+            if (this.before_complete)
+                return playback_complete();
+            if (this.ad_count)
+                hls_log('jwprovider attach inside ad '+this.ad_count);
+            this.attached = true;
+            hls.attachMedia(video);
+        } else {
+            this.play();
+        }
     };
     this.detachMedia = function(){
-        hls.trigger(Hls.Events.BUFFER_RESET);
-        hls.detachMedia();
-        if (this.level_cb)
-        {
-            hls.off(Hls.Events.LEVEL_LOADED, this.level_cb);
-            this.level_cb = undefined;
-        }
-        // XXX pavelki: hack to remove pending segments
         if (hls.bufferController !== undefined) {
+            hls.trigger(Hls.Events.BUFFER_RESET);
+            hls.detachMedia();
+            if (this.level_cb)
+            {
+                hls.off(Hls.Events.LEVEL_LOADED, this.level_cb);
+                this.level_cb = undefined;
+            }
+            // XXX pavelki: hack to remove pending segments
             delete hls.bufferController.segments;
+            this.attached = false;
+        } else {
+            this.pause();
         }
-        this.attached = false;
         return video;
     };
     this.setState = function(state){
